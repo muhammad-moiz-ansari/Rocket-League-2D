@@ -12,6 +12,12 @@ clock = pygame.time.Clock()
 FONT = pygame.font.SysFont(None, 36)
 BIG_FONT = pygame.font.SysFont(None, 70)
 
+# Ball Reset Condition
+# 0 -> In middle
+# 1 -> On left
+# 2 -> On right
+ball_reset_cond = 0
+
 # --- COLORS ---
 WHITE = (255,255,255)
 BLACK = (0,0,0)
@@ -111,8 +117,10 @@ class Ball:
     def reset(self):
         self.x = WIDTH//2
         self.y = HEIGHT//2
-        ang = random.uniform(0, 2*math.pi)
-        sp = random.uniform(2, 4)
+        # At kick off
+        ang = random.uniform(0, 2*math.pi)  # Random direction
+        #sp = random.uniform(2, 4)   # Random speed
+        sp = 0
         self.vx = math.cos(ang) * sp
         self.vy = math.sin(ang) * sp
         self.radius = 16
@@ -221,24 +229,28 @@ def run_match(duration):
             
             if event.type == pygame.KEYDOWN:
                 if game_state == "PLAYING":
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
                         game_state = "PAUSED"
                         paused_at_ticks = current_ticks
                 
                 elif game_state == "PAUSED":
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
                         game_state = "PLAYING"
                         total_pause_duration += (current_ticks - paused_at_ticks)
                     elif event.key == pygame.K_m:
                         return 'MENU'
                     elif event.key == pygame.K_r:
                         return 'RESTART'
+                    elif event.key == pygame.K_q:
+                        return 'QUIT'
                         
                 elif game_state == "GAMEOVER":
                     if event.key == pygame.K_m:
                         return 'MENU'
                     elif event.key == pygame.K_r:
                         return 'RESTART'
+                    elif event.key == pygame.K_q:
+                        return 'QUIT'
 
         # --- UPDATE LOGIC (If not paused/over) ---
         seconds_passed = 0
@@ -272,8 +284,10 @@ def run_match(duration):
                 # Check Goal Global
                 if ball.x - ball.radius < 0 and GOAL_TOP_Y < ball.y < GOAL_BOTTOM_Y:
                     score[1] += 1; goal_timer = 90
+                    ball_reset_cond = 1
                 elif ball.x + ball.radius > WIDTH and GOAL_TOP_Y < ball.y < GOAL_BOTTOM_Y:
                     score[0] += 1; goal_timer = 90
+                    ball_reset_cond = 2
             else:
                 goal_timer -= 1
                 if goal_timer == 0:
@@ -282,6 +296,7 @@ def run_match(duration):
                     p2.x, p2.y = WIDTH-200, HEIGHT//2; p2.vx=p2.vy=0
                     gk1.x, gk1.y = 50, HEIGHT//2; gk1.vx=gk1.vy=0
                     gk2.x, gk2.y = WIDTH-50, HEIGHT//2; gk2.vx=gk2.vy=0
+                    ball_reset_cond = 0
 
         # --- DRAWING ---
         screen.fill((18, 18, 18))
@@ -313,6 +328,7 @@ def run_match(duration):
             draw_text_centered("Press [ESC] to Resume", FONT, WHITE, 20)
             draw_text_centered("Press [R] to Restart", FONT, ORANGE, 60)
             draw_text_centered("Press [M] to Main Menu", FONT, RED, 100)
+            draw_text_centered("Press [Q] to Quit", FONT, RED, 140)
 
         # GAME OVER MENU
         if game_state == "GAMEOVER":
@@ -323,6 +339,7 @@ def run_match(duration):
             draw_text_centered(winner_text, BIG_FONT, ORANGE, -30)
             draw_text_centered("Press [R] to Restart", FONT, GREEN, 60)
             draw_text_centered("Press [M] to Main Menu", FONT, RED, 100)
+            draw_text_centered("Press [Q] to Quit", FONT, RED, 140)
 
         pygame.display.flip()
         clock.tick(60)
