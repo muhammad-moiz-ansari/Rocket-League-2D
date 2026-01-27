@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rocket Soccer: 2v2 Fullscreen</title>
+    <style>
+        body {
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: sans-serif;
+            overflow: hidden; /* Stops scrolling */
+        }
+        canvas {
+            /* This ensures the field fits your screen 
+               without needing to zoom out the browser */
+            width: 1000px;
+            height: 600px;
+            max-width: 100%;
+            max-height: 100vh; 
+            object-fit: contain;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+<script>
+/**
+ * ROCKET SOCCER - FULL SCREEN FIELD VERSION
+ */
+
+// --- INITIALIZATION ---
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const WIDTH = 1000;
+const HEIGHT = 600;
+
+// --- CONSTANTS ---
+const GK_SPEED_VAL = 4.5;
+const GOAL_WIDTH = 180;
+const GOAL_TOP_Y = HEIGHT / 2 - GOAL_WIDTH / 2;
+const GOAL_BOTTOM_Y = HEIGHT / 2 + GOAL_WIDTH / 2;
+
+const COLORS = {
+    WHITE: "rgb(255,255,255)",
+    BLACK: "rgb(0,0,0)",
+    BLUE: "rgb(40, 120, 255)",
+    RED: "rgb(255, 80, 80)",
+    GREEN: "rgb(80, 200, 120)",
+    ORANGE: "rgb(255,165,0)",
+    DARK_BLUE: "rgb(20, 60, 128)",
+    DARK_RED: "rgb(128, 40, 40)",
+    FIELD_GREEN: "rgb(30,120,30)", // Classic Soccer Green
+    GOAL_GRAY: "rgb(200,200,200)",
+    BG_DARK: "rgb(10, 10, 15)"
+};
+
+const FONT_SMALL = "36px sans-serif";
+const FONT_BIG = "70px sans-serif";
+
+// --- UTILS ---
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function drawTextCentered(text, font, color, yOffset) {
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, WIDTH / 2, HEIGHT / 2 + yOffset);
+}
+
+// --- INPUT ---
+const keysPressed = {};
+// Key definitions
+const CONTROLS = {
+    P1: {up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', boost: 'ShiftLeft'},
+    P2: {up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', boost: 'ShiftRight'}
+};
+
+window.addEventListener('keydown', (e) => {
+    keysPressed[e.code] = true;
+    handleGlobalInput(e.code, e.key);
+});
+window.addEventListener('keyup', (e) => keysPressed[e.code] = false);
+
+// --- CLASSES ---
+class Car {
+    constructor(x, y, color, controls) {
+        this.x = x; this.y = y;
+        this.vx = 0; this.vy = 0;
+        this.radius = 22;
+        this.color = color;
+        this.max_speed = 7;
+        this.friction = 0.985;
+        this.controls = controls; 
+        this.speed_power = 0.25;
+        this.boost = 1.0; 
+    }
+    handle() {
+        if (!this.controls) return;
+        let ax = 0, ay = 0;
+        const kUp = keysPressed[this.controls.up];
+        const kDown = keysPressed[this.controls.down];
+        const kLeft = keysPressed[this.controls.left];
+        const kRight = keysPressed[this.controls.right];
+        const kBoost = keysPressed[this.controls.boost];
+
+        if (kUp) ay -= this.speed_power * (kBoost ? 1.5 : 1.0);
+        if (kDown) ay += this.speed_power * 0.8;
+        if (kLeft) ax -= this.speed_power * 0.8;
+        if (kRight) ax += this.speed_power * 0.8;
+
+        this.vx += ax; this.vy += ay;
+        this.limit_speed(kBoost);
+    }
+    limit_speed(isBoosting) {
+        let limit = this.max_speed;
+        if (isBoosting) limit *= 1.4;
+        let sp = Math.hypot(this.vx, this.vy);
+        if (sp > limit) {
+            let scale = limit / sp;
+            this.vx *= scale; this.vy *= scale;
+        }
+    }
+    update() {
+        this.vx *= this.friction;
+        this.vy *= this.friction;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.x = clamp(this.x, this.radius, WIDTH - this.radius);
+        this.y = clamp(this.y, this.radius, HEIGHT - this.radius);
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        // Direction dot
+        let vx = this.vx, vy = this.vy;
+        if (Math.abs(vx) + Math.abs(vy) < 0.5) vx = 1;
+        let ang = Math.atan2(vy, vx);
+        let nx = this.x + Math.cos(ang) * this.radius;
+        let ny = this.y + Math.sin(ang) * this.radius;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 6, 0, Math.PI * 2);
+        ctx.fillStyle = COLORS.BLACK;
+        ctx.fill();
+    }
+}
+
+class Goalkeeper extends Car {
+    constructor(x, y, color, side) {
+        super(x, y, color, null);
+        this.side = side;
+        this.max_speed = GK_SPEED_VAL;
+    }
+    update_ai(ball) {
+        let dy = ball.y - this.y;
+        if (Math.abs(dy) > 10) this.vy += (dy > 0 ? 0.5 : -0.5);
+        let target_x = (this.side === 'left') ? 50 : WIDTH - 50;
+        let dx = target_x - this.x;
+        if (Math.abs(dx) > 5) this.vx += (dx > 0 ? 0.5 : -0.5);
+        this.limit_speed(false);
+        this.update();
+    }
+}
+
+class Ball {
+    constructor() { this.reset(); }
+    reset() {
+        this.x = WIDTH / 2; this.y = HEIGHT / 2;
+        this.vx = 0; this.vy = 0;
+        this.radius = 16;
+    }
+    update() {
+        this.vx *= 0.999; this.vy *= 0.999;
+        this.x += this.vx; this.y += this.vy;
+        // Bounce Top/Bottom
+        if (this.y < this.radius) { this.y = this.radius; this.vy *= -1; }
+        if (this.y > HEIGHT - this.radius) { this.y = HEIGHT - this.radius; this.vy *= -1; }
+        // Bounce Left/Right (if not goal)
+        if (this.x < this.radius) {
+            if (!(GOAL_TOP_Y < this.y && this.y < GOAL_BOTTOM_Y)) { this.x = this.radius; this.vx *= -1; }
+        }
+        if (this.x > WIDTH - this.radius) {
+            if (!(GOAL_TOP_Y < this.y && this.y < GOAL_BOTTOM_Y)) { this.x = WIDTH - this.radius; this.vx *= -1; }
+        }
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = COLORS.ORANGE;
+        ctx.fill();
+    }
+}
+
+// --- PHYSICS ---
+function collide_circle(a, b) {
+    let dx = b.x - a.x, dy = b.y - a.y;
+    let dist = Math.hypot(dx, dy);
+    let rSum = a.radius + b.radius;
+    if (dist === 0 || dist >= rSum) return { hit: false };
+    return { hit: true, nx: dx/dist, ny: dy/dist, overlap: rSum - dist };
+}
+
+function resolve_car_ball(car, ball) {
+    let c = collide_circle(car, ball);
+    if (c.hit) {
+        ball.x += c.nx * c.overlap;
+        ball.y += c.ny * c.overlap;
+        let impact = (ball.vx - car.vx) * c.nx + (ball.vy - car.vy) * c.ny;
+        if (impact < 0) {
+            let impulse = -impact * 1.2;
+            ball.vx += c.nx * impulse;
+            ball.vy += c.ny * impulse;
+            car.vx -= c.nx * impulse * 0.2;
+            car.vy -= c.ny * impulse * 0.2;
+        }
+    }
+}
+
+function resolve_car_car(c1, c2) {
+    let c = collide_circle(c1, c2);
+    if (c.hit) {
+        let sep = c.overlap / 2 + 0.1;
+        c1.x -= c.nx * sep; c1.y -= c.ny * sep;
+        c2.x += c.nx * sep; c2.y += c.ny * sep;
+        let v1n = c1.vx * c.nx + c1.vy * c.ny;
+        let v2n = c2.vx * c.nx + c2.vy * c.ny;
+        c1.vx += (v2n - v1n) * c.nx * 0.6; c1.vy += (v2n - v1n) * c.ny * 0.6;
+        c2.vx += (v1n - v2n) * c.nx * 0.6; c2.vy += (v1n - v2n) * c.ny * 0.6;
+    }
+}
+
+// --- GAME LOGIC ---
+const STATE_MENU = 0, STATE_PLAYING = 1, STATE_PAUSED = 2, STATE_GAMEOVER = 3;
+let gameState = STATE_MENU;
+let menuInput = "200", gameDuration = 200;
+let p1, p2, gk1, gk2, ball, all_cars = [];
+let score = [0, 0];
+let startTicks = 0, totalPauseDuration = 0, pausedAtTicks = 0, goalTimer = 0;
+let winnerText = "", timeLeft = 0;
+
+function resetGame() {
+    p1 = new Car(200, HEIGHT/2, COLORS.BLUE, CONTROLS.P1);
+    p2 = new Car(WIDTH-200, HEIGHT/2, COLORS.RED, CONTROLS.P2);
+    gk1 = new Goalkeeper(50, HEIGHT/2, COLORS.DARK_BLUE, 'left');
+    gk2 = new Goalkeeper(WIDTH-50, HEIGHT/2, COLORS.DARK_RED, 'right');
+    all_cars = [p1, p2, gk1, gk2];
+    ball = new Ball();
+    score = [0, 0];
+    startTicks = Date.now();
+    totalPauseDuration = 0;
+    goalTimer = 0;
+    gameState = STATE_PLAYING;
+}
+
+function handleGlobalInput(code, key) {
+    if (gameState === STATE_MENU) {
+        if (code === 'Enter') {
+            let val = parseInt(menuInput);
+            gameDuration = (!isNaN(val)) ? val : 200;
+            resetGame();
+        }
+        else if (code === 'Backspace') menuInput = menuInput.slice(0, -1);
+        else if (key.length === 1 && !isNaN(key) && menuInput.length < 4) menuInput += key;
+    }
+    else if (gameState === STATE_PLAYING) {
+        if (code === 'Escape' || code === 'KeyP') {
+            gameState = STATE_PAUSED;
+            pausedAtTicks = Date.now();
+        }
+    }
+    else if (gameState === STATE_PAUSED || gameState === STATE_GAMEOVER) {
+        if (code === 'Escape' && gameState === STATE_PAUSED) {
+            gameState = STATE_PLAYING;
+            totalPauseDuration += (Date.now() - pausedAtTicks);
+        }
+        else if (code === 'KeyM' || code === 'KeyQ') gameState = STATE_MENU;
+        else if (code === 'KeyR') resetGame();
+    }
+}
+
+function update() {
+    if (gameState === STATE_PLAYING || gameState === STATE_GAMEOVER) {
+        let currentTicks = Date.now();
+        let timeElapsed = (currentTicks - startTicks - totalPauseDuration) / 1000;
+        timeLeft = Math.max(0, gameDuration - timeElapsed);
+        if (timeLeft === 0 && gameState !== STATE_GAMEOVER) {
+            gameState = STATE_GAMEOVER;
+            winnerText = (score[0] > score[1]) ? "BLUE WINS!" : (score[1] > score[0] ? "RED WINS!" : "DRAW!");
+        }
+    }
+    if (gameState === STATE_PLAYING) {
+        p1.handle(); p2.handle();
+        if (goalTimer === 0) {
+            p1.update(); p2.update();
+            gk1.update_ai(ball); gk2.update_ai(ball);
+            ball.update();
+            all_cars.forEach(c => resolve_car_ball(c, ball));
+            for(let i=0; i<all_cars.length; i++)
+                for(let j=i+1; j<all_cars.length; j++) resolve_car_car(all_cars[i], all_cars[j]);
+            
+            // Goals
+            if (ball.x < 0 && (ball.y > GOAL_TOP_Y && ball.y < GOAL_BOTTOM_Y)) {
+                score[1]++; goalTimer = 90;
+            } else if (ball.x > WIDTH && (ball.y > GOAL_TOP_Y && ball.y < GOAL_BOTTOM_Y)) {
+                score[0]++; goalTimer = 90;
+            }
+        } else {
+            goalTimer--;
+            if (goalTimer === 0) {
+                ball.reset();
+                p1.x = 200; p1.y = HEIGHT/2; p1.vx=0; p1.vy=0;
+                p2.x = WIDTH-200; p2.y = HEIGHT/2; p2.vx=0; p2.vy=0;
+                gk1.x = 50; gk1.y = HEIGHT/2; gk1.vx=0; gk1.vy=0;
+                gk2.x = WIDTH-50; gk2.y = HEIGHT/2; gk2.vx=0; gk2.vy=0;
+            }
+        }
+    }
+}
+
+function draw() {
+    // --- DRAW BACKGROUND ---
+    // Change: Draw the green field over the ENTIRE canvas, no margins.
+    ctx.fillStyle = COLORS.FIELD_GREEN;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    if (gameState === STATE_MENU) {
+        ctx.fillStyle = COLORS.BG_DARK;
+        ctx.fillRect(0,0,WIDTH,HEIGHT);
+        drawTextCentered("ROCKET SOCCER SETUP", "bold "+FONT_BIG, COLORS.WHITE, -200);
+        drawTextCentered("Enter Game Duration (Seconds):", FONT_SMALL, COLORS.BLUE, -80);
+        drawTextCentered(menuInput + "_", "bold "+FONT_BIG, COLORS.GREEN, -20);
+        drawTextCentered("Type number and press ENTER", FONT_SMALL, COLORS.ORANGE, 150);
+        return;
+    }
+
+    // --- DRAW PITCH LINES ---
+    ctx.strokeStyle = COLORS.WHITE;
+    ctx.lineWidth = 3;
+
+    // Center Line - Touches Top and Bottom now
+    ctx.beginPath();
+    ctx.moveTo(WIDTH/2, 0); 
+    ctx.lineTo(WIDTH/2, HEIGHT);
+    ctx.stroke();
+
+    // Goals - Draw them at the edges
+    ctx.strokeStyle = COLORS.GOAL_GRAY;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, GOAL_TOP_Y, 60, GOAL_WIDTH);
+    ctx.strokeRect(WIDTH-60, GOAL_TOP_Y, 60, GOAL_WIDTH);
+
+    // --- DRAW OBJECTS ---
+    ball.draw();
+    all_cars.forEach(c => c.draw());
+
+    // --- DRAW HUD ---
+    ctx.font = FONT_SMALL;
+    ctx.fillStyle = COLORS.WHITE;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(`${score[0]} - ${score[1]}`, WIDTH/2, 50);
+    ctx.fillText(`Time: ${Math.floor(timeLeft)}`, WIDTH/2, 15);
+
+    if (goalTimer > 0 && gameState === STATE_PLAYING) {
+        drawTextCentered("GOAL!", "bold "+FONT_BIG, COLORS.GREEN, -40);
+    }
+
+    // --- OVERLAYS ---
+    if (gameState === STATE_PAUSED || gameState === STATE_GAMEOVER) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        let title = (gameState === STATE_PAUSED) ? "PAUSED" : "GAME OVER";
+        let sub = (gameState === STATE_PAUSED) ? "Press [ESC] to Resume" : winnerText;
+        drawTextCentered(title, "bold "+FONT_BIG, COLORS.WHITE, -100);
+        drawTextCentered(sub, gameState===STATE_PAUSED ? FONT_SMALL : "bold "+FONT_BIG, COLORS.ORANGE, -30);
+        drawTextCentered("Press [R] to Restart", FONT_SMALL, COLORS.GREEN, 60);
+        drawTextCentered("Press [M] to Main Menu", FONT_SMALL, COLORS.RED, 100);
+    }
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
