@@ -2,10 +2,10 @@ import socket
 import time
 import pickle
 import pygame
-from game_objects import *
+from rl_2d_game_objects import *
 
 # --- SERVER CONFIG ---
-SERVER_IP = "0.0.0.0" # Listens on all available networks (Radmin, Wi-Fi, Localhost)
+SERVER_IP = "0.0.0.0" 
 PORT = 5555
 FPS = 60
 
@@ -15,13 +15,16 @@ sock.bind((SERVER_IP, PORT))
 sock.setblocking(False)
 
 print(f"[SERVER] Started on Port {PORT}")
-print("[SERVER] Waiting for players to connect...")
+print("[SERVER] Waiting for players...")
 
 # --- GAME INSTANCE ---
-p1 = Car(200, HEIGHT//2, BLUE)
-p2 = Car(WIDTH-200, HEIGHT//2, RED)
-gk1 = Goalkeeper(50, HEIGHT//2, DARK_BLUE, 'left')
-gk2 = Goalkeeper(WIDTH-50, HEIGHT//2, DARK_RED, 'right')
+# Player 1 is RED (Host)
+p1 = Car(200, HEIGHT//2, RED)
+# Player 2 is BLUE (Joiner)
+p2 = Car(WIDTH-200, HEIGHT//2, BLUE)
+
+gk1 = Goalkeeper(50, HEIGHT//2, DARK_RED, 'left')
+gk2 = Goalkeeper(WIDTH-50, HEIGHT//2, DARK_BLUE, 'right')
 ball = Ball()
 score = [0, 0]
 
@@ -33,17 +36,31 @@ p2_addr = None
 clock = pygame.time.Clock()
 goal_timer = 0
 
+# Game Config
+game_duration = 200 # Default
+start_time = None
+game_active = False
+
 def get_snapshot():
-    """ Creates a packet of the current world state """
+    """ Creates a packet of the current world state, including VELOCITY for drawing noses """
+    time_left = 0
+    if game_active and start_time:
+         elapsed = time.time() - start_time
+         time_left = max(0, game_duration - elapsed)
+    else:
+         time_left = game_duration # Show default if not started
+
     return {
         "time": time.time(),
-        "p1": (p1.x, p1.y),
-        "p2": (p2.x, p2.y),
-        "gk1": (gk1.x, gk1.y),
-        "gk2": (gk2.x, gk2.y),
+        # We send (x, y, vx, vy) so client can draw the nose
+        "p1": (p1.x, p1.y, p1.vx, p1.vy),
+        "p2": (p2.x, p2.y, p2.vx, p2.vy),
+        "gk1": (gk1.x, gk1.y, gk1.vx, gk1.vy),
+        "gk2": (gk2.x, gk2.y, gk2.vx, gk2.vy),
         "ball": (ball.x, ball.y),
         "score": score,
-        "goal_timer": goal_timer
+        "goal_timer": goal_timer,
+        "time_left": time_left
     }
 
 # --- MAIN LOOP ---
@@ -54,29 +71,38 @@ while True:
     try:
         while True:
             data, addr = sock.recvfrom(1024)
-            
+            inputs = pickle.loads(data)
+
             # Registration Logic
             if addr not in clients:
                 if p1_addr is None:
                     p1_addr = addr
                     clients[addr] = "p1"
-                    print(f"[CONNECT] Player 1 joined from {addr}")
+                    print(f"[CONNECT] Player 1 (Host/Red) joined from {addr}")
                 elif p2_addr is None:
                     p2_addr = addr
                     clients[addr] = "p2"
-                    print(f"[CONNECT] Player 2 joined from {addr}")
+                    print(f"[CONNECT] Player 2 (Joiner/Blue) joined from {addr}")
+
+            # Handle CONFIG packet (From Host Menu)
+            if "config_duration" in inputs:
+                game_duration = inputs["config_duration"]
+                start_time = time.time()
+                game_active = True
+                print(f"[GAME START] Duration set to {game_duration}s")
+                continue # Skip physics this frame
             
             # Apply Inputs
-            inputs = pickle.loads(data)
             player_id = clients.get(addr)
-            
             if player_id == "p1": p1.handle_network_keys(inputs)
             elif player_id == "p2": p2.handle_network_keys(inputs)
 
     except BlockingIOError:
         pass
 
-    # 2. UPDATE PHYSICS
+    # 2. UPDATE PHYSICS (Only if game started, or just allow warm up)
+    # We allow movement always, but timer logic depends on game_active
+    
     if goal_timer == 0:
         p1.update(); p2.update()
         gk1.update_ai(ball); gk2.update_ai(ball)
