@@ -23,11 +23,12 @@ WHITE = (255,255,255)
 BLACK = (0,0,0)
 BLUE = (40, 120, 255)
 RED = (255, 80, 80)
-GREEN = (80, 200, 120)
+GREEN = (80, 200, 120) # Grass Green
 ORANGE = (255,165,0)
 DARK_BLUE = (20, 60, 128)
 DARK_RED = (128, 40, 40)
 GRAY_TRANSPARENT = (0, 0, 0, 180) # Semi-transparent black
+FIELD_COLOR = (30, 120, 30) # Darker Green for the field
 
 # --- CONSTANTS ---
 GK_SPEED_VAL = 4.5 
@@ -85,6 +86,7 @@ class Car:
 
     def draw(self, surf):
         pygame.draw.circle(surf, self.color, (int(self.x), int(self.y)), self.radius)
+        # Draw nose to show direction
         vx, vy = self.vx, self.vy
         if abs(vx) + abs(vy) < 0.5: vx = 1
         ang = math.atan2(vy, vx)
@@ -118,9 +120,8 @@ class Ball:
         self.x = WIDTH//2
         self.y = HEIGHT//2
         # At kick off
-        ang = random.uniform(0, 2*math.pi)  # Random direction
-        #sp = random.uniform(2, 4)   # Random speed
-        sp = 0
+        ang = random.uniform(0, 2*math.pi)
+        sp = 0 # Start still
         self.vx = math.cos(ang) * sp
         self.vy = math.sin(ang) * sp
         self.radius = 16
@@ -177,7 +178,9 @@ def main_menu():
     """ Handles the initial duration input screen """
     input_text = "200"
     while True:
-        screen.fill((10, 10, 15))
+        # Menu background
+        screen.fill((20, 20, 20))
+        
         draw_text_centered("ROCKET SOCCER SETUP", BIG_FONT, WHITE, -200)
         draw_text_centered("Enter Game Duration (Seconds):", FONT, BLUE, -80)
         draw_text_centered(input_text + "_", BIG_FONT, GREEN, -20)
@@ -218,6 +221,7 @@ def run_match(duration):
     goal_timer = 0
     game_state = "PLAYING" # PLAYING, PAUSED, GAMEOVER
     winner_text = ""
+    global ball_reset_cond
 
     while True:
         current_ticks = pygame.time.get_ticks()
@@ -299,11 +303,20 @@ def run_match(duration):
                     ball_reset_cond = 0
 
         # --- DRAWING ---
-        screen.fill((18, 18, 18))
-        pygame.draw.rect(screen, (30,120,30), (60,40, WIDTH-120, HEIGHT-80), border_radius=12)
-        pygame.draw.line(screen, WHITE, (WIDTH//2, 60), (WIDTH//2, HEIGHT-60), 3)
-        pygame.draw.rect(screen, (200,200,200), (0, GOAL_TOP_Y, 60, GOAL_WIDTH), 2)
-        pygame.draw.rect(screen, (200,200,200), (WIDTH-60, GOAL_TOP_Y, 60, GOAL_WIDTH), 2)
+        # 1. Fill Full Screen with Field Color
+        screen.fill(FIELD_COLOR)
+        
+        # 2. Draw Field Lines
+        # Outer Border (Now at the edge of the screen)
+        pygame.draw.rect(screen, WHITE, (0, 0, WIDTH, HEIGHT), 3)
+        # Center Line (Full Height)
+        pygame.draw.line(screen, WHITE, (WIDTH//2, 0), (WIDTH//2, HEIGHT), 3)
+        # Center Circle
+        pygame.draw.circle(screen, WHITE, (WIDTH//2, HEIGHT//2), 70, 3)
+
+        # 3. Draw Goal Boxes
+        pygame.draw.rect(screen, (200,200,200), (0, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
+        pygame.draw.rect(screen, (200,200,200), (WIDTH-60, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
 
         ball.draw(screen)
         for car in all_cars: car.draw(screen)
@@ -315,7 +328,8 @@ def run_match(duration):
         screen.blit(timer_txt, (WIDTH//2 - timer_txt.get_width()//2, 15))
 
         if goal_timer > 0 and game_state == "PLAYING":
-            draw_text_centered("GOAL!", BIG_FONT, GREEN, -40)
+            gm = BIG_FONT.render("GOAL!", True, GREEN)
+            screen.blit(gm, (WIDTH//2 - gm.get_width()//2, HEIGHT//2 - 40))
 
         # --- OVERLAYS ---
         
