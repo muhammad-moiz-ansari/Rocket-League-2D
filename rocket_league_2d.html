@@ -33,7 +33,7 @@
 
 <script>
 /**
- * ROCKET SOCCER - FULL SCREEN FIELD VERSION
+ * ROCKET SOCCER - FIXED GOAL COLLISION VERSION
  */
 
 // --- INITIALIZATION ---
@@ -182,15 +182,32 @@ class Ball {
     update() {
         this.vx *= 0.999; this.vy *= 0.999;
         this.x += this.vx; this.y += this.vy;
+        
         // Bounce Top/Bottom
         if (this.y < this.radius) { this.y = this.radius; this.vy *= -1; }
         if (this.y > HEIGHT - this.radius) { this.y = HEIGHT - this.radius; this.vy *= -1; }
-        // Bounce Left/Right (if not goal)
+        
+        // --- CHANGED: Wall Logic to allow Goal Entry ---
+        // Only bounce off Left/Right walls if NOT in the goal vertical range
+        
+        // Left Wall Check
         if (this.x < this.radius) {
-            if (!(GOAL_TOP_Y < this.y && this.y < GOAL_BOTTOM_Y)) { this.x = this.radius; this.vx *= -1; }
+            // If ball is within vertical range of goal, DO NOTHING (allow it to pass through)
+            // Otherwise, bounce
+            if (!(this.y > GOAL_TOP_Y && this.y < GOAL_BOTTOM_Y)) {
+                this.x = this.radius;
+                this.vx *= -1;
+            }
         }
+        
+        // Right Wall Check
         if (this.x > WIDTH - this.radius) {
-            if (!(GOAL_TOP_Y < this.y && this.y < GOAL_BOTTOM_Y)) { this.x = WIDTH - this.radius; this.vx *= -1; }
+            // If ball is within vertical range of goal, DO NOTHING (allow it to pass through)
+            // Otherwise, bounce
+            if (!(this.y > GOAL_TOP_Y && this.y < GOAL_BOTTOM_Y)) {
+                this.x = WIDTH - this.radius;
+                this.vx *= -1;
+            }
         }
     }
     draw() {
@@ -308,12 +325,26 @@ function update() {
             for(let i=0; i<all_cars.length; i++)
                 for(let j=i+1; j<all_cars.length; j++) resolve_car_car(all_cars[i], all_cars[j]);
             
-            // Goals
-            if (ball.x < 0 && (ball.y > GOAL_TOP_Y && ball.y < GOAL_BOTTOM_Y)) {
-                score[1]++; goalTimer = 90;
-            } else if (ball.x > WIDTH && (ball.y > GOAL_TOP_Y && ball.y < GOAL_BOTTOM_Y)) {
-                score[0]++; goalTimer = 90;
+            // --- GOAL DETECTION FIX ---
+            // Previously: Checks if ball.x < 0 (entire ball center passed 0)
+            // New: Checks if ball.x - radius <= 0 (left edge touches left wall)
+            
+            // Left Goal (Scored by Right Team/Red)
+            if ((ball.x - ball.radius) <= 0) {
+                 if (ball.y > GOAL_TOP_Y && ball.y < GOAL_BOTTOM_Y) {
+                    score[1]++; 
+                    goalTimer = 90;
+                 }
+            } 
+            
+            // Right Goal (Scored by Left Team/Blue)
+            if ((ball.x + ball.radius) >= WIDTH) {
+                if (ball.y > GOAL_TOP_Y && ball.y < GOAL_BOTTOM_Y) {
+                    score[0]++; 
+                    goalTimer = 90;
+                }
             }
+            
         } else {
             goalTimer--;
             if (goalTimer === 0) {
@@ -329,7 +360,6 @@ function update() {
 
 function draw() {
     // --- DRAW BACKGROUND ---
-    // Change: Draw the green field over the ENTIRE canvas, no margins.
     ctx.fillStyle = COLORS.FIELD_GREEN;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -347,7 +377,7 @@ function draw() {
     ctx.strokeStyle = COLORS.WHITE;
     ctx.lineWidth = 3;
 
-    // Center Line - Touches Top and Bottom now
+    // Center Line
     ctx.beginPath();
     ctx.moveTo(WIDTH/2, 0); 
     ctx.lineTo(WIDTH/2, HEIGHT);
