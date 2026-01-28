@@ -1,0 +1,24 @@
+RocketSoccer/
+│
+├── game.py                <-- (Paste the code below into this file)
+│
+└── assets/                <-- (Create this folder)
+    ├── textures/          <-- (Put images here)
+    │   ├── menu_bg.png    (1000x600 px - Background for menu)
+    │   ├── logo.png       (Transparent logo, approx 400px wide)
+    │   ├── field.png      (1000x600 px - Green field texture, optional)
+    │   ├── car_red.png    (Top down car, red)
+    │   ├── car_blue.png   (Top down car, blue)
+    │   └── gk_red.png	  (Red Team Goalkeeper)
+    │   └── gk_blue.png	  (Blue Team Goalkeeper)
+    │   └── ball.png       (Soccer ball)
+    │
+    ├── fonts/             <-- (Put fonts here)
+    │   └── main_font.ttf  (A cool gaming font like 'Orbitron' or 'Russo One')
+    │
+    ├── music/             <-- (Put music here)
+    │   └── bg_music.mp3   (Long looping song)
+    │
+    └── sfx/               <-- (Put sound effects here)
+        ├── click.wav      (Button click sound)
+        └── goal.wav       (Crowd cheering or whistle)
