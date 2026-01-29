@@ -75,7 +75,7 @@ def main_menu_loop(screen, clock):
     
     state = "MAIN" 
     selected_mode_key = "SOCCER"
-    duration_input_text = "180" 
+    duration_input_text = "200" 
     
     center_x = WIDTH // 2
     start_y = 250
@@ -138,7 +138,8 @@ def main_menu_loop(screen, clock):
             pygame.draw.rect(screen, (0,0,0,150), input_rect, border_radius=10)
             pygame.draw.rect(screen, GREEN, input_rect, 3, border_radius=10)
             
-            txt_surf = assets_loader.FONTS['title'].render(duration_input_text + "_", True, WHITE)
+            #txt_surf = assets_loader.FONTS['title'].render(duration_input_text + "_", True, WHITE)
+            txt_surf = assets_loader.FONTS['title'].render(duration_input_text, True, WHITE)
             screen.blit(txt_surf, (input_rect.centerx - txt_surf.get_width()//2, input_rect.centery - txt_surf.get_height()//2))
             
             inst = assets_loader.FONTS['body'].render("Press ENTER to Start Match", True, ORANGE)
@@ -269,7 +270,7 @@ def main_menu_loop(screen, clock):
                             if d > 9999: d = 9999
                             final_config['duration'] = d
                         except ValueError:
-                            final_config['duration'] = 180
+                            final_config['duration'] = 200
                         
                         if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
                         return final_config

@@ -70,7 +70,7 @@ def init_assets():
     FONTS['header'] = load_font('title_font.ttf', 60)
     FONTS['ui'] = load_font('main_font.ttf', 40)     # Orbitron
     FONTS['ui_small'] = load_font('main_font.ttf', 28)
-    FONTS['body'] = load_font('body_font.ttf', 24)   # Rajdhani
+    FONTS['body'] = load_font('body_font.ttf', 24)   # Exo 2
     FONTS['hud'] = load_font('main_font.ttf', 36)
     FONTS['hud_big'] = load_font('main_font.ttf', 70)
 
