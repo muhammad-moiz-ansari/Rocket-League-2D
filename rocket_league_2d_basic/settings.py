@@ -36,7 +36,7 @@ GOAL_BOTTOM_Y = HEIGHT//2 + GOAL_WIDTH//2
 
 # --- DEFAULT PHYSICS ---
 # These are defaults, but Game Modes will override them
-CAR_FRICTION = 0.985 
+CAR_FRICTION = 0.980
 BALL_FRICTION = 0.992
 
 # --- GAME MODES ---
@@ -46,10 +46,10 @@ GAME_MODES = {
         'desc': 'Traditional soccer on grass. Balanced physics.',
         'field_texture': 'field_grass', # Fallback to 'field' if not found
         'ball_texture': 'ball_soccer',
-        'friction_car': 0.985,
+        'friction_car': 0.980,
         'friction_ball': 0.992,
         'ball_speed_mult': 1.0,
-        'duration': 300,
+        'duration': 200,
         'bg_color': FIELD_COLOR_GRASS
     },
     'HOCKEY': {
@@ -60,7 +60,7 @@ GAME_MODES = {
         'friction_car': 0.996, # Very slippery
         'friction_ball': 0.998,
         'ball_speed_mult': 1.3,
-        'duration': 180,
+        'duration': 200,
         'bg_color': FIELD_COLOR_ICE
     }
 }
