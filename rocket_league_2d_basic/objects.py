@@ -2,29 +2,35 @@
 import pygame
 import math
 import random
-from settings import * # This imports CAR_FRICTION and BALL_FRICTION
+from settings import *
 import assets_loader
 
 def clamp(v, a, b): return max(a, min(b, v))
 
 class Car:
-    def __init__(self, x, y, color, controls, texture_key):
+    def __init__(self, x, y, color, controls, texture_key, friction=CAR_FRICTION):
         self.x = x; self.y = y
         self.vx = 0; self.vy = 0
         self.radius = 22
         self.color = color
         self.max_speed = 7
-        # UPDATED: Using constant from settings
-        self.friction = CAR_FRICTION 
+        
+        # UPDATED: Accept friction override for Ice Hockey mode
+        self.friction = friction
+        
         self.controls = controls 
         self.speed_power = 0.25
         self.texture_key = texture_key
+        self.boost_active = False
 
     def handle(self, keys):
         if not self.controls: return
         ax = ay = 0
+        
+        self.boost_active = keys[self.controls.get('boost', 0)] if self.controls.get('boost') else False
+        
         if keys[self.controls['up']]:
-            ay -= self.speed_power * (1.5 if keys[self.controls.get('boost', None)] else 1.0)
+            ay -= self.speed_power * (1.5 if self.boost_active else 1.0)
         if keys[self.controls['down']]:
             ay += self.speed_power * 0.8
         if keys[self.controls['left']]:
@@ -32,12 +38,15 @@ class Car:
         if keys[self.controls['right']]:
             ax += self.speed_power * 0.8
 
+        # Play boost sound if just activated (simple check)
+        # Note: In a robust engine we'd check previous state, but this is simple object logic
+        
         self.vx += ax; self.vy += ay
-        self.limit_speed(keys)
+        self.limit_speed()
 
-    def limit_speed(self, keys=None):
+    def limit_speed(self):
         limit = self.max_speed
-        if keys and self.controls and keys[self.controls.get('boost', None)]:
+        if self.boost_active:
             limit *= 1.4
         sp = math.hypot(self.vx, self.vy)
         if sp > limit:
@@ -45,7 +54,6 @@ class Car:
             self.vx *= scale; self.vy *= scale
 
     def update(self):
-        # UPDATED: Using self.friction which is set to CAR_FRICTION
         self.vx *= self.friction
         self.vy *= self.friction
         self.x += self.vx
@@ -65,8 +73,8 @@ class Car:
             pygame.draw.circle(surf, BLACK, (int(self.x), int(self.y)), 6)
 
 class Goalkeeper(Car):
-    def __init__(self, x, y, color, side, texture_key):
-        super().__init__(x, y, color, None, texture_key)
+    def __init__(self, x, y, color, side, texture_key, friction=CAR_FRICTION):
+        super().__init__(x, y, color, None, texture_key, friction)
         self.side = side 
         self.max_speed = GK_SPEED_VAL 
         
@@ -84,7 +92,9 @@ class Goalkeeper(Car):
         self.update() 
 
 class Ball:
-    def __init__(self):
+    def __init__(self, texture_key='ball', friction=BALL_FRICTION):
+        self.texture_key = texture_key
+        self.friction = friction
         self.reset()
         
     def reset(self):
@@ -96,9 +106,8 @@ class Ball:
         self.ang_vel = 0
         
     def update(self):
-        # UPDATED: Using BALL_FRICTION from settings
-        self.vx *= BALL_FRICTION
-        self.vy *= BALL_FRICTION
+        self.vx *= self.friction
+        self.vy *= self.friction
         
         self.x += self.vx; self.y += self.vy
         
@@ -116,7 +125,10 @@ class Ball:
         self.angle = (self.angle + self.ang_vel) % 360
 
     def draw(self, surf):
-        texture = assets_loader.GRAPHICS.get('ball')
+        texture = assets_loader.GRAPHICS.get(self.texture_key)
+        # Fallback to standard ball if specific texture not found
+        if not texture: texture = assets_loader.GRAPHICS.get('ball')
+
         if texture:
             rotated_img = pygame.transform.rotate(texture, self.angle)
             new_rect = rotated_img.get_rect(center=(int(self.x), int(self.y)))
