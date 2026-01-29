@@ -1,0 +1,9 @@
+RocketSoccer/
+├── assets/          <-- (Your existing folder with images/sounds)
+├── settings.py      <-- Constants (Colors, Dimensions)
+├── assets_loader.py <-- Handles loading images/sounds
+├── physics.py       <-- Collision math
+├── objects.py       <-- Classes (Car, Ball, Goalkeeper)
+├── menu.py          <-- Main Menu logic
+├── game.py          <-- The Match loop
+└── main.py          <-- The entry point (Run this file!)
