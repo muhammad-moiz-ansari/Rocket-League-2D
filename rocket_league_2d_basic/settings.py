@@ -22,3 +22,9 @@ GK_SPEED_VAL = 4.5
 GOAL_WIDTH = 180
 GOAL_TOP_Y = HEIGHT//2 - GOAL_WIDTH//2
 GOAL_BOTTOM_Y = HEIGHT//2 + GOAL_WIDTH//2
+
+# Physics / Friction
+# Lower value = More slippery (ice)
+# Higher value (closer to 1.0) = Less friction (air hockey)
+CAR_FRICTION = 0.985 
+BALL_FRICTION = 0.992

@@ -2,7 +2,7 @@
 import pygame
 import math
 import random
-from settings import *
+from settings import * # This imports CAR_FRICTION and BALL_FRICTION
 import assets_loader
 
 def clamp(v, a, b): return max(a, min(b, v))
@@ -14,7 +14,8 @@ class Car:
         self.radius = 22
         self.color = color
         self.max_speed = 7
-        self.friction = 0.985
+        # UPDATED: Using constant from settings
+        self.friction = CAR_FRICTION 
         self.controls = controls 
         self.speed_power = 0.25
         self.texture_key = texture_key
@@ -44,6 +45,7 @@ class Car:
             self.vx *= scale; self.vy *= scale
 
     def update(self):
+        # UPDATED: Using self.friction which is set to CAR_FRICTION
         self.vx *= self.friction
         self.vy *= self.friction
         self.x += self.vx
@@ -60,7 +62,6 @@ class Car:
             surf.blit(rotated_img, rect)
         else:
             pygame.draw.circle(surf, self.color, (int(self.x), int(self.y)), self.radius)
-            # Simple nose line
             pygame.draw.circle(surf, BLACK, (int(self.x), int(self.y)), 6)
 
 class Goalkeeper(Car):
@@ -95,7 +96,10 @@ class Ball:
         self.ang_vel = 0
         
     def update(self):
-        self.vx *= 0.992; self.vy *= 0.992
+        # UPDATED: Using BALL_FRICTION from settings
+        self.vx *= BALL_FRICTION
+        self.vy *= BALL_FRICTION
+        
         self.x += self.vx; self.y += self.vy
         
         # Walls
