@@ -78,7 +78,7 @@ def main_menu_loop(screen, clock):
     duration_input_text = "200" 
     
     center_x = WIDTH // 2
-    start_y = 250
+    start_y = 215
     gap = 70
     
     # Main Menu Buttons
@@ -94,8 +94,8 @@ def main_menu_loop(screen, clock):
     btn_back = Button("BACK", center_x - 100, HEIGHT - 100, 200, 60, action="BACK")
 
     mode_rects = {
-        'SOCCER': pygame.Rect(100, 150, 380, 400),
-        'HOCKEY': pygame.Rect(520, 150, 380, 400)
+        'SOCCER': pygame.Rect(100, 175, 380, 295),
+        'HOCKEY': pygame.Rect(520, 175, 380, 295)
     }
     mode_scales = {'SOCCER': 1.0, 'HOCKEY': 1.0}
 
@@ -107,7 +107,7 @@ def main_menu_loop(screen, clock):
         logo = assets_loader.GRAPHICS.get('logo')
         
         if state == "MAIN" and logo:
-            scale = 0.4 + 0.05 * math.sin(pygame.time.get_ticks() * 0.003)
+            scale = 0.55 + 0.05 * math.sin(pygame.time.get_ticks() * 0.003)
             w = int(logo.get_width() * scale)
             h = int(logo.get_height() * scale)
             logo_scaled = pygame.transform.scale(logo, (w, h))
@@ -195,29 +195,38 @@ def main_menu_loop(screen, clock):
                 screen.blit(d1, (draw_rect.centerx - d1.get_width()//2, draw_rect.top + 180))
                 screen.blit(d2, (draw_rect.centerx - d2.get_width()//2, draw_rect.top + 210))
 
-            info = assets_loader.FONTS['body'].render("Click to Select", True, WHITE)
-            screen.blit(info, (WIDTH//2 - info.get_width()//2, HEIGHT - 150))
+            #info = assets_loader.FONTS['body'].render("Click to Select", True, WHITE)
+            #screen.blit(info, (WIDTH//2 - info.get_width()//2, HEIGHT - 150))
             
             btn_back.draw(screen)
 
         elif state == "CONTROLS":
-            y = 150
+            y = 160
             lines = [
                 "PLAYER 1 (BLUE): W,A,S,D + L-SHIFT (Boost)",
                 "PLAYER 2 (RED): ARROWS + R-SHIFT (Boost)",
                 "",
                 "P / ESC: Pause Game",
                 "R: Restart Match (Paused)",
-                "M: Main Menu (Paused)"
+                "M: Main Menu (Paused)",
+                "Q: Quit Game (Paused)"
             ]
             for line in lines:
-                surf = assets_loader.FONTS['ui_small'].render(line, True, WHITE)
+                if "PLAYER 1" in line:
+                    surf = assets_loader.FONTS['ui_small'].render(line, True, BLUE)
+                elif "PLAYER 2" in line:
+                    surf = assets_loader.FONTS['ui_small'].render(line, True, RED)
+                else:
+                    surf = assets_loader.FONTS['ui_small'].render(line, True, LIGHT_GRAY)
                 screen.blit(surf, (WIDTH//2 - surf.get_width()//2, y))
-                y += 50
+                if line == "":
+                    y += 30
+                else:
+                    y += 50
             btn_back.draw(screen)
 
         elif state == "HELP":
-            y = 140
+            y = 190
             rules = [
                 "OBJECTIVE: Score more goals than opponent!",
                 "1. Each team has 1 Player + 1 AI Goalkeeper",
@@ -228,8 +237,8 @@ def main_menu_loop(screen, clock):
                 "Good luck!"
             ]
             for line in rules:
-                surf = assets_loader.FONTS['body'].render(line, True, WHITE)
-                screen.blit(surf, (100, y))
+                surf = assets_loader.FONTS['body'].render(line, True, LIGHT_GRAY)
+                screen.blit(surf, (230, y))
                 y += 40
             btn_back.draw(screen)
 
