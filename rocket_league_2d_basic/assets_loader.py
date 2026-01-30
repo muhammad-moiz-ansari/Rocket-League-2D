@@ -38,6 +38,13 @@ def init_assets():
     # --- TEXTURES ---
     # UI / Menu
     GRAPHICS['menu_bg'] = load_texture('menu_bg.png', WIDTH, HEIGHT)
+    # Adjust Transparency (Check if it loaded first to avoid crashes)
+    if GRAPHICS['menu_bg']:
+        GRAPHICS['menu_bg'].set_alpha(80)
+        # 50  = Very transparent (ghostly)
+        # 128 = 50% transparent
+        # 200 = Slight transparency
+        # 255 = Fully solid (Default)
     GRAPHICS['logo'] = load_texture('logo.png') # Don't resize yet
     GRAPHICS['button'] = load_texture('button_normal.png', 300, 60)
     
