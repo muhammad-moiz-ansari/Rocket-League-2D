@@ -93,9 +93,12 @@ def main_menu_loop(screen, clock):
     # Back Button
     btn_back = Button("BACK", center_x - 100, HEIGHT - 100, 200, 60, action="BACK")
 
+    # Play Button
+    btn_play = Button("P L A Y", center_x - 100, HEIGHT - 200, 200, 60, action="PLAY")
+
     mode_rects = {
-        'SOCCER': pygame.Rect(100, 175, 380, 295),
-        'HOCKEY': pygame.Rect(520, 175, 380, 295)
+        'SOCCER': pygame.Rect(40, 175, 440, 295),
+        'HOCKEY': pygame.Rect(520, 175, 440, 295)
     }
     mode_scales = {'SOCCER': 1.0, 'HOCKEY': 1.0}
 
@@ -132,9 +135,9 @@ def main_menu_loop(screen, clock):
 
         elif state == "DURATION":
             lbl = assets_loader.FONTS['ui'].render("ENTER MATCH DURATION (Seconds):", True, BLUE)
-            screen.blit(lbl, (WIDTH//2 - lbl.get_width()//2, HEIGHT//2 - 60))
+            screen.blit(lbl, (WIDTH//2 - lbl.get_width()//2, HEIGHT//2 - 100))
             
-            input_rect = pygame.Rect(WIDTH//2 - 150, HEIGHT//2, 300, 80)
+            input_rect = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 - 40, 300, 80)
             pygame.draw.rect(screen, (0,0,0,150), input_rect, border_radius=10)
             pygame.draw.rect(screen, GREEN, input_rect, 3, border_radius=10)
             
@@ -142,9 +145,10 @@ def main_menu_loop(screen, clock):
             txt_surf = assets_loader.FONTS['title'].render(duration_input_text, True, WHITE)
             screen.blit(txt_surf, (input_rect.centerx - txt_surf.get_width()//2, input_rect.centery - txt_surf.get_height()//2))
             
-            inst = assets_loader.FONTS['body'].render("Press ENTER to Start Match", True, ORANGE)
-            screen.blit(inst, (WIDTH//2 - inst.get_width()//2, HEIGHT//2 + 100))
-            
+            inst = assets_loader.FONTS['body'].render("Press ENTER or click PLAY to Start Match", True, ORANGE)
+            screen.blit(inst, (WIDTH//2 - inst.get_width()//2, HEIGHT//2 + 60))
+
+            btn_play.draw(screen)
             btn_back.draw(screen)
 
         elif state == "MODE":
@@ -252,7 +256,7 @@ def main_menu_loop(screen, clock):
                 if btn_back.check_input(event) == "BACK":
                     state = "MAIN"
                     if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
-                    continue # <--- CRITICAL FIX: Stop processing this event immediately!
+                    continue # <--- Stop processing this event immediately!
             
             # 2. STATE SPECIFIC INPUTS
             if state == "MAIN":
@@ -270,19 +274,17 @@ def main_menu_loop(screen, clock):
                         return None
             
             elif state == "DURATION":
+                # 1. Track if we should start the game
+                start_match = False
+
+                # Check Button Click (This handles Mouse Events internally)
+                if btn_play.check_input(event) == "PLAY":
+                    start_match = True
+
+                # Check Keyboard Inputs
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        final_config = GAME_MODES[selected_mode_key].copy()
-                        try:
-                            d = int(duration_input_text)
-                            if d < 10: d = 10 
-                            if d > 9999: d = 9999
-                            final_config['duration'] = d
-                        except ValueError:
-                            final_config['duration'] = 200
-                        
-                        if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
-                        return final_config
+                        start_match = True
                     
                     elif event.key == pygame.K_BACKSPACE:
                         duration_input_text = duration_input_text[:-1]
@@ -290,6 +292,20 @@ def main_menu_loop(screen, clock):
                         state = "MAIN"
                     elif event.unicode.isdigit() and len(duration_input_text) < 4:
                         duration_input_text += event.unicode
+
+                # 2. Execute Start Logic if triggered by either Enter OR Button
+                if start_match:
+                    final_config = GAME_MODES[selected_mode_key].copy()
+                    try:
+                        d = int(duration_input_text)
+                        if d < 10: d = 10 
+                        if d > 9999: d = 9999
+                        final_config['duration'] = d
+                    except ValueError:
+                        final_config['duration'] = 200
+                    
+                    if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
+                    return final_config
 
             elif state == "MODE":
                 if event.type == pygame.MOUSEBUTTONDOWN:
