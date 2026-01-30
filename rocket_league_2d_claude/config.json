@@ -1,0 +1,8 @@
+{
+  "game_mode": "HOCKEY",
+  "theme": "CLASSIC",
+  "music_volume": 0.5000000000000001,
+  "sfx_volume": 0.9,
+  "fullscreen": false,
+  "show_fps": false
+}
