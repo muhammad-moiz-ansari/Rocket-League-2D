@@ -110,7 +110,7 @@ def main_menu_loop(screen, clock):
         logo = assets_loader.GRAPHICS.get('logo')
         
         if state == "MAIN" and logo:
-            scale = 0.55 + 0.05 * math.sin(pygame.time.get_ticks() * 0.003)
+            scale = 0.37 + 0.04 * math.sin(pygame.time.get_ticks() * 0.003)
             w = int(logo.get_width() * scale)
             h = int(logo.get_height() * scale)
             logo_scaled = pygame.transform.scale(logo, (w, h))
