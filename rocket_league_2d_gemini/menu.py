@@ -74,7 +74,7 @@ def main_menu_loop(screen, clock):
     """ Main Menu Entry Point. Returns configuration dict or None (Quit) """
     
     state = "MAIN" 
-    selected_mode_key = "SOCCER"
+    selected_mode_key = "HOCKEY"    # Default Game Mode
     duration_input_text = "200" 
     
     center_x = WIDTH // 2

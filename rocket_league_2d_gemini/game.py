@@ -48,7 +48,7 @@ def run_match(screen, clock, mode_config):
              'car_blue', friction_car)
     
     p2 = Car(WIDTH-200, HEIGHT//2, RED, 
-             {'up':pygame.K_UP,'down':pygame.K_DOWN,'left':pygame.K_LEFT,'right':pygame.K_RIGHT,'boost':pygame.K_RSHIFT}, 
+             {'up':pygame.K_UP,'down':pygame.K_DOWN,'left':pygame.K_LEFT,'right':pygame.K_RIGHT,'boost':pygame.K_m},   # K_RSHIFT
              'car_red', friction_car)
     
     gk1 = Goalkeeper(50, HEIGHT//2, DARK_BLUE, 'left', 'gk_blue', friction_car)
@@ -153,8 +153,8 @@ def run_match(screen, clock, mode_config):
             pygame.draw.circle(screen, WHITE, (WIDTH//2, HEIGHT//2), 70, 3)
 
         # Draw Goal Boxes
-        pygame.draw.rect(screen, LIGHT_GRAY, (0, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
-        pygame.draw.rect(screen, LIGHT_GRAY, (WIDTH-60, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
+        pygame.draw.rect(screen, WHITE, (0, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
+        pygame.draw.rect(screen, WHITE, (WIDTH-60, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
 
         # Entities
         ball.draw(screen)

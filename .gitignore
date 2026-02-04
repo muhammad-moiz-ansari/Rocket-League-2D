@@ -1,0 +1,4 @@
+# Ignoring cache files
+
+rocket_league_2d_gemini/__pycache__/
+rocket_league_2d_claude/__pycache__/
