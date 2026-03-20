@@ -81,9 +81,14 @@ def run_match(screen, clock, mode_config):
     overtime_transition = 0
 
     assets_loader.play_music("GAME")
+    
+    # Track time between frames so we can precisely pause the clock during goals
+    last_ticks = pygame.time.get_ticks()
 
     while True:
         current_ticks = pygame.time.get_ticks()
+        dt_ms = current_ticks - last_ticks
+        last_ticks = current_ticks
         
         # --- INPUT ---
         for event in pygame.event.get():
@@ -108,6 +113,13 @@ def run_match(screen, clock, mode_config):
                     if event.key == pygame.K_m: return 'MENU'
                     elif event.key == pygame.K_r: return 'RESTART'
                     elif event.key == pygame.K_q: return 'QUIT'
+
+        # --- TIMER FREEZE LOGIC ---
+        # If a goal celebration is happening, the overtime transition is showing, 
+        # or the game is completely over, we add the frame's time to the pause duration 
+        # so the match clock doesn't progress at all.
+        if game_state == "GAMEOVER" or (game_state == "PLAYING" and (goal_timer > 0 or overtime_transition > 0)):
+            total_pause_duration += dt_ms
 
         # --- UPDATE ---
         time_left = 0
@@ -145,7 +157,7 @@ def run_match(screen, clock, mode_config):
                     time_left = effective_ticks / 1000
 
         if game_state == "PLAYING":
-            # If we are transitioning into overtime, freeze logic temporarily
+            # If we are transitioning into overtime, freeze physical logic temporarily
             if overtime_transition > 0:
                 overtime_transition -= 1
             else:
