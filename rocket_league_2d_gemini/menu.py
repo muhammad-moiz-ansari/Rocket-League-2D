@@ -50,7 +50,6 @@ class Button:
             
         # 2. Handle Click (Action)
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # We check collidepoint directly here to be robust against fast clicks
             if self.rect.collidepoint(event.pos) and self.action:
                 if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
                 return self.action
@@ -75,7 +74,12 @@ def main_menu_loop(screen, clock):
     
     state = "MAIN" 
     selected_mode_key = "HOCKEY"    # Default Game Mode
+    
+    # Text Inputs
     duration_input_text = "200" 
+    blue_name = "Blue"
+    red_name = "Red"
+    active_input = "duration" # Track which box is currently selected
     
     center_x = WIDTH // 2
     start_y = 215
@@ -90,11 +94,14 @@ def main_menu_loop(screen, clock):
         Button("EXIT", center_x - 150, start_y + gap*4, action="EXIT")
     ]
     
-    # Back Button
+    # Standard Buttons
     btn_back = Button("BACK", center_x - 100, HEIGHT - 100, 200, 60, action="BACK")
+    btn_play = Button("P L A Y", center_x - 100, HEIGHT - 180, 200, 60, action="PLAY")
 
-    # Play Button
-    btn_play = Button("P L A Y", center_x - 100, HEIGHT - 200, 200, 60, action="PLAY")
+    # Layout Rects for text inputs
+    dur_rect = pygame.Rect(WIDTH//2 - 100, 180, 200, 70)
+    blue_rect = pygame.Rect(100, 250, 240, 60)
+    red_rect = pygame.Rect(WIDTH - 100 - 240, 250, 240, 60)
 
     mode_rects = {
         'SOCCER': pygame.Rect(40, 175, 440, 295),
@@ -134,19 +141,43 @@ def main_menu_loop(screen, clock):
             screen.blit(v_surf, (WIDTH - 120, HEIGHT - 30))
 
         elif state == "DURATION":
-            lbl = assets_loader.FONTS['ui'].render("ENTER MATCH DURATION (Seconds):", True, BLUE)
-            screen.blit(lbl, (WIDTH//2 - lbl.get_width()//2, HEIGHT//2 - 100))
+            # 1. Labels
+            lbl = assets_loader.FONTS['ui_small'].render("ENTER MATCH DURATION (Seconds):", True, BLUE)
+            screen.blit(lbl, (WIDTH//2 - lbl.get_width()//2, 130))
+
+            b_lbl = assets_loader.FONTS['ui_small'].render("Player Name", True, BLUE)
+            screen.blit(b_lbl, (blue_rect.centerx - b_lbl.get_width()//2, blue_rect.top - 35))
+
+            r_lbl = assets_loader.FONTS['ui_small'].render("Player Name", True, RED)
+            screen.blit(r_lbl, (red_rect.centerx - r_lbl.get_width()//2, red_rect.top - 35))
+
+            # 2. Draw Text Box Backgrounds
+            pygame.draw.rect(screen, (0,0,0,180), dur_rect, border_radius=8)
+            pygame.draw.rect(screen, (0,0,0,180), blue_rect, border_radius=8)
+            pygame.draw.rect(screen, (0,0,0,180), red_rect, border_radius=8)
+
+            # 3. Outline based on Active state
+            dur_color = GREEN if active_input == "duration" else GRAY
+            blue_color = GREEN if active_input == "blue_name" else BLUE
+            red_color = GREEN if active_input == "red_name" else RED
             
-            input_rect = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 - 40, 300, 80)
-            pygame.draw.rect(screen, (0,0,0,150), input_rect, border_radius=10)
-            pygame.draw.rect(screen, GREEN, input_rect, 3, border_radius=10)
+            pygame.draw.rect(screen, dur_color, dur_rect, 3, border_radius=8)
+            pygame.draw.rect(screen, blue_color, blue_rect, 3, border_radius=8)
+            pygame.draw.rect(screen, red_color, red_rect, 3, border_radius=8)
             
-            #txt_surf = assets_loader.FONTS['title'].render(duration_input_text + "_", True, WHITE)
-            txt_surf = assets_loader.FONTS['title'].render(duration_input_text, True, WHITE)
-            screen.blit(txt_surf, (input_rect.centerx - txt_surf.get_width()//2, input_rect.centery - txt_surf.get_height()//2))
+            # 4. Draw Texts inside Boxes
+            def draw_box_text(text, rect, is_active):
+                display_text = text + ("_" if is_active else "")
+                txt_surf = assets_loader.FONTS['ui'].render(display_text, True, WHITE)
+                screen.blit(txt_surf, (rect.centerx - txt_surf.get_width()//2, rect.centery - txt_surf.get_height()//2))
+
+            draw_box_text(duration_input_text, dur_rect, active_input == "duration")
+            draw_box_text(blue_name, blue_rect, active_input == "blue_name")
+            draw_box_text(red_name, red_rect, active_input == "red_name")
             
+            # 5. Instructions & Buttons
             inst = assets_loader.FONTS['body'].render("Press ENTER or click PLAY to Start Match", True, ORANGE)
-            screen.blit(inst, (WIDTH//2 - inst.get_width()//2, HEIGHT//2 + 60))
+            screen.blit(inst, (WIDTH//2 - inst.get_width()//2, 350))
 
             btn_play.draw(screen)
             btn_back.draw(screen)
@@ -198,9 +229,6 @@ def main_menu_loop(screen, clock):
                 d2 = assets_loader.FONTS['body'].render(line2, True, LIGHT_GRAY)
                 screen.blit(d1, (draw_rect.centerx - d1.get_width()//2, draw_rect.top + 180))
                 screen.blit(d2, (draw_rect.centerx - d2.get_width()//2, draw_rect.top + 210))
-
-            #info = assets_loader.FONTS['body'].render("Click to Select", True, WHITE)
-            #screen.blit(info, (WIDTH//2 - info.get_width()//2, HEIGHT - 150))
             
             btn_back.draw(screen)
 
@@ -251,12 +279,12 @@ def main_menu_loop(screen, clock):
             if event.type == pygame.QUIT:
                 return None
             
-            # 1. GLOBAL BACK BUTTON (FIXED LOGIC)
+            # 1. GLOBAL BACK BUTTON
             if state in ["MODE", "CONTROLS", "HELP", "DURATION"]:
                 if btn_back.check_input(event) == "BACK":
                     state = "MAIN"
                     if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
-                    continue # <--- Stop processing this event immediately!
+                    continue 
             
             # 2. STATE SPECIFIC INPUTS
             if state == "MAIN":
@@ -274,26 +302,49 @@ def main_menu_loop(screen, clock):
                         return None
             
             elif state == "DURATION":
-                # 1. Track if we should start the game
                 start_match = False
 
-                # Check Button Click (This handles Mouse Events internally)
+                # Check Play Button
                 if btn_play.check_input(event) == "PLAY":
                     start_match = True
 
-                # Check Keyboard Inputs
+                # Check Text Box Clicks
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if dur_rect.collidepoint(event.pos):
+                        active_input = "duration"
+                        if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
+                    elif blue_rect.collidepoint(event.pos):
+                        active_input = "blue_name"
+                        if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
+                    elif red_rect.collidepoint(event.pos):
+                        active_input = "red_name"
+                        if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
+
+                # Check Keyboard Typing
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         start_match = True
                     
                     elif event.key == pygame.K_BACKSPACE:
-                        duration_input_text = duration_input_text[:-1]
+                        if active_input == "duration":
+                            duration_input_text = duration_input_text[:-1]
+                        elif active_input == "blue_name":
+                            blue_name = blue_name[:-1]
+                        elif active_input == "red_name":
+                            red_name = red_name[:-1]
+                            
                     elif event.key == pygame.K_ESCAPE:
                         state = "MAIN"
-                    elif event.unicode.isdigit() and len(duration_input_text) < 4:
-                        duration_input_text += event.unicode
+                    else:
+                        # Add characters based on which box is active
+                        if active_input == "duration" and event.unicode.isdigit() and len(duration_input_text) < 4:
+                            duration_input_text += event.unicode
+                        elif active_input == "blue_name" and event.unicode.isprintable() and len(blue_name) < 10:
+                            blue_name += event.unicode
+                        elif active_input == "red_name" and event.unicode.isprintable() and len(red_name) < 10:
+                            red_name += event.unicode
 
-                # 2. Execute Start Logic if triggered by either Enter OR Button
+                # Execute Start Logic
                 if start_match:
                     final_config = GAME_MODES[selected_mode_key].copy()
                     try:
@@ -303,6 +354,10 @@ def main_menu_loop(screen, clock):
                         final_config['duration'] = d
                     except ValueError:
                         final_config['duration'] = 200
+                        
+                    # Save custom names to config
+                    final_config['p1_name'] = blue_name if blue_name.strip() else "Blue"
+                    final_config['p2_name'] = red_name if red_name.strip() else "Red"
                     
                     if assets_loader.SOUNDS['click']: assets_loader.SOUNDS['click'].play()
                     return final_config

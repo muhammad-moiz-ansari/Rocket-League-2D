@@ -5,12 +5,19 @@ import assets_loader
 from objects import Car, Goalkeeper, Ball
 from physics import resolve_car_ball, resolve_car_car
 
-def draw_hud(screen, score, time_left, winner_text="", is_overtime=False):
-    # Score
+def draw_hud(screen, score, time_left, winner_text="", is_overtime=False, p1_name="Blue", p2_name="Red"):
+    # 1. Main Scoreboard (Center)
     score_txt = assets_loader.FONTS['header'].render(f"{score[0]} - {score[1]}", True, WHITE)
     screen.blit(score_txt, (WIDTH//2 - score_txt.get_width()//2, 20))
     
-    # Timer updates dynamically based on Overtime
+    # 2. Player Names (Dynamically placed on sides of the score)
+    p1_txt = assets_loader.FONTS['ui_small'].render(p1_name, True, BLUE)
+    screen.blit(p1_txt, (WIDTH//2 - score_txt.get_width()//2 - p1_txt.get_width() - 30, 35))
+    
+    p2_txt = assets_loader.FONTS['ui_small'].render(p2_name, True, RED)
+    screen.blit(p2_txt, (WIDTH//2 + score_txt.get_width()//2 + 30, 35))
+    
+    # 3. Timer Logic
     if is_overtime:
         timer_txt = assets_loader.FONTS['hud'].render(f"+{int(time_left)}", True, ORANGE)
         screen.blit(timer_txt, (WIDTH//2 - timer_txt.get_width()//2, 80))
@@ -23,7 +30,7 @@ def draw_hud(screen, score, time_left, winner_text="", is_overtime=False):
         timer_txt = assets_loader.FONTS['hud'].render(f"{min_left}:{sec_left:02d}", True, col)
         screen.blit(timer_txt, (WIDTH//2 - timer_txt.get_width()//2, 80))
     
-    # Game Over Screen Overlay
+    # 4. Game Over Screen Overlay
     if winner_text:
         ov = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
         ov.fill(GRAY_TRANSPARENT)
@@ -44,12 +51,16 @@ def run_match(screen, clock, mode_config):
     mode_config: Dictionary from settings.GAME_MODES 
     """
     
-    # 1. Setup based on Mode
+    # 1. Setup based on Mode Configuration
     friction_car = mode_config['friction_car']
     friction_ball = mode_config['friction_ball']
     ball_tex = mode_config['ball_texture']
     field_tex_key = mode_config.get('field_texture', 'field')
     duration = mode_config['duration']
+    
+    # Extract Custom Names
+    p1_name = mode_config.get('p1_name', 'Blue')
+    p2_name = mode_config.get('p2_name', 'Red')
     
     # 2. Init Objects
     p1 = Car(200, HEIGHT//2, BLUE, 
@@ -57,7 +68,7 @@ def run_match(screen, clock, mode_config):
              'car_blue', friction_car)
     
     p2 = Car(WIDTH-200, HEIGHT//2, RED, 
-             {'up':pygame.K_UP,'down':pygame.K_DOWN,'left':pygame.K_LEFT,'right':pygame.K_RIGHT,'boost':pygame.K_m},   # K_RSHIFT / K_m
+             {'up':pygame.K_UP,'down':pygame.K_DOWN,'left':pygame.K_LEFT,'right':pygame.K_RIGHT,'boost':pygame.K_m},
              'car_red', friction_car)
     
     gk1 = Goalkeeper(50, HEIGHT//2, DARK_BLUE, 'left', 'gk_blue', friction_car)
@@ -76,13 +87,10 @@ def run_match(screen, clock, mode_config):
     game_state = "PLAYING"
     winner_text = ""
     
-    # Overtime specific flags
     is_overtime = False
     overtime_transition = 0
 
     assets_loader.play_music("GAME")
-    
-    # Track time between frames so we can precisely pause the clock during goals
     last_ticks = pygame.time.get_ticks()
 
     while True:
@@ -115,9 +123,6 @@ def run_match(screen, clock, mode_config):
                     elif event.key == pygame.K_q: return 'QUIT'
 
         # --- TIMER FREEZE LOGIC ---
-        # If a goal celebration is happening, the overtime transition is showing, 
-        # or the game is completely over, we add the frame's time to the pause duration 
-        # so the match clock doesn't progress at all.
         if game_state == "GAMEOVER" or (game_state == "PLAYING" and (goal_timer > 0 or overtime_transition > 0)):
             total_pause_duration += dt_ms
 
@@ -129,35 +134,29 @@ def run_match(screen, clock, mode_config):
             if not is_overtime:
                 time_left = max(0, duration - (effective_ticks / 1000))
                 
-                # Check for Match End / Overtime ONLY when a goal celebration is not actively happening
                 if time_left == 0 and game_state != "GAMEOVER" and goal_timer == 0:
                     if score[0] != score[1]:
                         game_state = "GAMEOVER"
-                        if score[0] > score[1]: winner_text = "BLUE TEAM WINS!"
-                        else: winner_text = "RED TEAM WINS!"
+                        if score[0] > score[1]: winner_text = f"{p1_name.upper()} WINS!"
+                        else: winner_text = f"{p2_name.upper()} WINS!"
                     else:
-                        # TIE GAME! TRIGGER OVERTIME!
                         is_overtime = True
-                        overtime_transition = 150 # 2.5 seconds at 60fps
+                        overtime_transition = 150 
                         
-                        # Reset Time Variables to start counting up from 0
                         start_ticks = current_ticks
                         total_pause_duration = 0
                         time_left = 0
                         
-                        # Instantly Reset Entities for the Overtime Kickoff
                         ball.reset()
                         p1.x, p1.y = 200, HEIGHT//2; p1.vx=p1.vy=0
                         p2.x, p2.y = WIDTH-200, HEIGHT//2; p2.vx=p2.vy=0
                         gk1.x, gk1.y = 50, HEIGHT//2; gk1.vx=gk1.vy=0
                         gk2.x, gk2.y = WIDTH-50, HEIGHT//2; gk2.vx=gk2.vy=0
             else:
-                # Count up during Overtime (only after transition ends)
                 if overtime_transition == 0 and game_state != "GAMEOVER":
                     time_left = effective_ticks / 1000
 
         if game_state == "PLAYING":
-            # If we are transitioning into overtime, freeze physical logic temporarily
             if overtime_transition > 0:
                 overtime_transition -= 1
             else:
@@ -180,10 +179,9 @@ def run_match(screen, clock, mode_config):
                         score[1] += 1
                         if assets_loader.SOUNDS['goal']: assets_loader.SOUNDS['goal'].play()
                         
-                        # Overtime Golden Goal Rule
                         if is_overtime:
                             game_state = "GAMEOVER"
-                            winner_text = "RED WINS! (GOLDEN GOAL)"
+                            winner_text = f"{p2_name.upper()} WINS! (GOLDEN GOAL)"
                         else:
                             goal_timer = 90
                             
@@ -191,10 +189,9 @@ def run_match(screen, clock, mode_config):
                         score[0] += 1
                         if assets_loader.SOUNDS['goal']: assets_loader.SOUNDS['goal'].play()
                         
-                        # Overtime Golden Goal Rule
                         if is_overtime:
                             game_state = "GAMEOVER"
-                            winner_text = "BLUE WINS! (GOLDEN GOAL)"
+                            winner_text = f"{p1_name.upper()} WINS! (GOLDEN GOAL)"
                         else:
                             goal_timer = 90
                 else:
@@ -207,33 +204,28 @@ def run_match(screen, clock, mode_config):
                         gk2.x, gk2.y = WIDTH-50, HEIGHT//2; gk2.vx=gk2.vy=0
 
         # --- DRAWING ---
-        # Draw Field
         field_img = assets_loader.GRAPHICS.get(field_tex_key)
         if field_img:
             screen.blit(field_img, (0,0))
         else:
-            # Fallback Color
             bg_col = mode_config.get('bg_color', FIELD_COLOR_GRASS)
             screen.fill(bg_col)
             pygame.draw.rect(screen, WHITE, (0, 0, WIDTH, HEIGHT), 3)
             pygame.draw.line(screen, WHITE, (WIDTH//2, 0), (WIDTH//2, HEIGHT), 3)
             pygame.draw.circle(screen, WHITE, (WIDTH//2, HEIGHT//2), 70, 3)
 
-        # Draw Goal Boxes
         pygame.draw.rect(screen, WHITE, (0, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
         pygame.draw.rect(screen, WHITE, (WIDTH-60, GOAL_TOP_Y, 60, GOAL_WIDTH), 3)
 
-        # Entities
         ball.draw(screen)
         for car in all_cars: car.draw(screen)
 
-        # HUD / Overlays
-        draw_hud(screen, score, time_left, winner_text if game_state == "GAMEOVER" else "", is_overtime)
+        # Pass custom names to draw_hud
+        draw_hud(screen, score, time_left, winner_text if game_state == "GAMEOVER" else "", is_overtime, p1_name, p2_name)
         
-        # Overtime Transition Pop-up
         if overtime_transition > 0:
             ov = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            ov.fill((0, 0, 0, 150)) # Dim the screen slightly
+            ov.fill((0, 0, 0, 150)) 
             screen.blit(ov, (0,0))
             
             ot_msg = assets_loader.FONTS['title'].render("OVERTIME", True, ORANGE)
