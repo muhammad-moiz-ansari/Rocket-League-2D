@@ -87,7 +87,7 @@ def init_assets():
     if os.path.exists(music_path):
         try:
             pygame.mixer.music.load(music_path)
-            pygame.mixer.music.set_volume(0.3)
+            pygame.mixer.music.set_volume(0.1)
             pygame.mixer.music.play(-1)
         except:
             pass
@@ -100,7 +100,7 @@ def play_music(type_name):
         try:
             pygame.mixer.music.stop()
             pygame.mixer.music.load(path)
-            pygame.mixer.music.set_volume(0.3)
+            pygame.mixer.music.set_volume(0.1)
             pygame.mixer.music.play(-1)
         except:
             pass
