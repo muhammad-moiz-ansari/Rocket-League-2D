@@ -1,5 +1,6 @@
 # game.py
 import pygame
+import math
 from settings import *
 import assets_loader
 from objects import Car, Goalkeeper, Ball
@@ -92,6 +93,7 @@ def run_match(screen, clock, mode_config):
 
     assets_loader.play_music("GAME")
     last_ticks = pygame.time.get_ticks()
+    last_goal_speed = 0.0
 
     while True:
         current_ticks = pygame.time.get_ticks()
@@ -176,6 +178,7 @@ def run_match(screen, clock, mode_config):
 
                     # Goal Check
                     if ball.x - ball.radius < 0 and GOAL_TOP_Y < ball.y < GOAL_BOTTOM_Y:
+                        last_goal_speed = math.hypot(ball.vx, ball.vy) * 9.0
                         score[1] += 1
                         if assets_loader.SOUNDS['goal']: assets_loader.SOUNDS['goal'].play()
                         
@@ -186,6 +189,7 @@ def run_match(screen, clock, mode_config):
                             goal_timer = 90
                             
                     elif ball.x + ball.radius > WIDTH and GOAL_TOP_Y < ball.y < GOAL_BOTTOM_Y:
+                        last_goal_speed = math.hypot(ball.vx, ball.vy) * 9.0
                         score[0] += 1
                         if assets_loader.SOUNDS['goal']: assets_loader.SOUNDS['goal'].play()
                         
@@ -237,6 +241,9 @@ def run_match(screen, clock, mode_config):
         elif goal_timer > 0 and game_state == "PLAYING":
             gm = assets_loader.FONTS['hud_big'].render("GOAL!", True, ORANGE)
             screen.blit(gm, (WIDTH//2 - gm.get_width()//2, HEIGHT//2 - 40))
+            
+            speed_txt = assets_loader.FONTS['ui_small'].render(f"Speed: {last_goal_speed:.1f} KPH", True, BLACK)
+            screen.blit(speed_txt, (WIDTH//2 - speed_txt.get_width()//2, HEIGHT//2 + 40))
             
         if game_state == "PAUSED":
             ov = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
