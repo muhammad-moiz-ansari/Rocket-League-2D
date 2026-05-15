@@ -21,6 +21,9 @@ def load_texture(name, width=None, height=None):
 
 def load_sound(name):
     path = os.path.join("assets", "sfx", name)
+    # If mixer isn't initialized, skip loading sounds (web may not support it yet)
+    if not pygame.mixer.get_init():
+        return None
     try:
         return pygame.mixer.Sound(path)
     except (FileNotFoundError, pygame.error):
@@ -82,25 +85,29 @@ def init_assets():
     FONTS['hud_big'] = load_font('main_font.ttf', 70)
 
     # --- MUSIC ---
-    # We load menu music by default
+    # Preload menu music (don't auto-play here; browsers often block autoplay)
     music_path = os.path.join("assets", "music", "menu_music.mp3")
-    if os.path.exists(music_path):
+    if os.path.exists(music_path) and pygame.mixer.get_init():
         try:
             pygame.mixer.music.load(music_path)
-            pygame.mixer.music.set_volume(0.3)
-            pygame.mixer.music.play(-1)
-        except:
+            pygame.mixer.music.set_volume(0.2)
+        except Exception:
             pass
 
 def play_music(type_name):
     """ Helper to switch tracks """
     filename = "menu_music.mp3" if type_name == "MENU" else "game_music.mp3"
     path = os.path.join("assets", "music", filename)
+    # If mixer not available, do nothing
+    if not pygame.mixer.get_init():
+        return
+
     if os.path.exists(path):
         try:
             pygame.mixer.music.stop()
             pygame.mixer.music.load(path)
-            pygame.mixer.music.set_volume(0.3)
+            pygame.mixer.music.set_volume(0.2)
+            # start only on user interaction (may still be blocked by browser until gesture)
             pygame.mixer.music.play(-1)
-        except:
+        except Exception:
             pass

@@ -1,5 +1,4 @@
 # main.py
-import asyncio  # 1. IMPORT ASYNCIO
 import pygame
 import sys
 from settings import WIDTH, HEIGHT
@@ -7,28 +6,30 @@ import assets_loader
 from menu import main_menu_loop
 from game import run_match
 
-# 2. WRAP EVERYTHING IN AN ASYNC FUNCTION
-async def main():
+
+def main():
+    """Entry point for the game. Prepared for pygbag (avoid top-level execution)."""
     # 1. Init Pygame
     pygame.init()
-    pygame.mixer.init()
+    try:
+        pygame.mixer.init()
+    except Exception:
+        # audio may not be available in some environments (web); continue silently
+        pass
 
     # 2. Setup Screen
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Rocket Soccer: Ultimate Edition")
     clock = pygame.time.Clock()
 
-    # 3. Load Assets
+    # 3. Load Assets (no auto-play here)
     assets_loader.init_assets()
 
     # 4. Main Application Loop
     while True:
-        # 4a. Show Main Menu
+        # 4a. Show Main Menu -> Returns game configuration or None
         assets_loader.play_music("MENU")
-        
-        # IMPORTANT: We added 'await' here. 
-        # You must change main_menu_loop to be 'async def' in menu.py
-        game_config = await main_menu_loop(screen, clock)
+        game_config = main_menu_loop(screen, clock)
         
         if game_config is None:
             # User selected Exit
@@ -37,18 +38,15 @@ async def main():
         # 4b. Run Match Loop
         action = 'RESTART'
         while action == 'RESTART':
-            # IMPORTANT: We added 'await' here.
-            # You must change run_match to be 'async def' in game.py
-            action = await run_match(screen, clock, game_config)
+            action = run_match(screen, clock, game_config)
         
+        # If action is 'MENU', loop continues to top. 
+        # If action is 'QUIT', we break below.
         if action == 'QUIT':
             break
 
-        # 5. REQUIRED FOR WEB: Yield control to the browser
-        await asyncio.sleep(0)
-
     pygame.quit()
-    sys.exit()
 
-# 6. RUN THE ASYNC MAIN
-asyncio.run(main())
+
+if __name__ == "__main__":
+    main()
