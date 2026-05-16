@@ -21,9 +21,6 @@ def load_texture(name, width=None, height=None):
 
 def load_sound(name):
     path = os.path.join("assets", "sfx", name)
-    # If mixer isn't initialized, skip loading sounds (web may not support it yet)
-    if not pygame.mixer.get_init():
-        return None
     try:
         return pygame.mixer.Sound(path)
     except (FileNotFoundError, pygame.error):
@@ -52,12 +49,12 @@ def init_assets():
     GRAPHICS['button'] = load_texture('button_normal.png', 300, 60)
     
     # Field Variants
-    GRAPHICS['field'] = load_texture('field.png', WIDTH, HEIGHT) # Legacy
+    GRAPHICS['field'] = load_texture('field_grass.png', WIDTH, HEIGHT) # Legacy
     GRAPHICS['field_grass'] = load_texture('field_grass.png', WIDTH, HEIGHT)
     GRAPHICS['field_ice'] = load_texture('field_ice.png', WIDTH, HEIGHT)
 
     # Balls
-    GRAPHICS['ball'] = load_texture('ball.png', 32, 32) # Legacy
+    GRAPHICS['ball'] = load_texture('ball_soccer.png', 32, 32) # Legacy
     GRAPHICS['ball_soccer'] = load_texture('ball_soccer.png', 32, 32)
     GRAPHICS['ball_puck'] = load_texture('ball_puck.png', 32, 32)
 
@@ -85,29 +82,25 @@ def init_assets():
     FONTS['hud_big'] = load_font('main_font.ttf', 70)
 
     # --- MUSIC ---
-    # Preload menu music (don't auto-play here; browsers often block autoplay)
-    music_path = os.path.join("assets", "music", "menu_music.mp3")
-    if os.path.exists(music_path) and pygame.mixer.get_init():
+    # We load menu music by default
+    music_path = os.path.join("assets", "music", "menu_music.ogg")
+    if os.path.exists(music_path):
         try:
             pygame.mixer.music.load(music_path)
             pygame.mixer.music.set_volume(0.2)
-        except Exception:
+            pygame.mixer.music.play(-1)
+        except:
             pass
 
 def play_music(type_name):
     """ Helper to switch tracks """
-    filename = "menu_music.mp3" if type_name == "MENU" else "game_music.mp3"
+    filename = "menu_music.ogg" if type_name == "MENU" else "game_music.ogg"
     path = os.path.join("assets", "music", filename)
-    # If mixer not available, do nothing
-    if not pygame.mixer.get_init():
-        return
-
     if os.path.exists(path):
         try:
             pygame.mixer.music.stop()
             pygame.mixer.music.load(path)
             pygame.mixer.music.set_volume(0.2)
-            # start only on user interaction (may still be blocked by browser until gesture)
             pygame.mixer.music.play(-1)
-        except Exception:
+        except:
             pass

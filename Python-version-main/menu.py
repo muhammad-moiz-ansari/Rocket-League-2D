@@ -379,4 +379,4 @@ def main_menu_loop(screen, clock):
                     state = "MAIN"
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(FPS)

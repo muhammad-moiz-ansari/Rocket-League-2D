@@ -1,6 +1,7 @@
 # menu.py
 import pygame
 import math
+import asyncio
 from settings import *
 import assets_loader
 
@@ -69,7 +70,7 @@ def draw_background(screen):
             b = 40 + (i * 40 // HEIGHT)
             pygame.draw.line(screen, (r,g,b), (0,i), (WIDTH, i))
 
-def main_menu_loop(screen, clock):
+async def main_menu_loop(screen, clock):
     """ Main Menu Entry Point. Returns configuration dict or None (Quit) """
     
     state = "MAIN" 
@@ -379,4 +380,5 @@ def main_menu_loop(screen, clock):
                     state = "MAIN"
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(FPS)
+        await asyncio.sleep(0)
