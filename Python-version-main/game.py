@@ -94,6 +94,7 @@ def run_match(screen, clock, mode_config):
     assets_loader.play_music("GAME")
     last_ticks = pygame.time.get_ticks()
     last_goal_speed = 0.0
+    goal_speed_factor = 8.0
 
     while True:
         current_ticks = pygame.time.get_ticks()
@@ -178,7 +179,7 @@ def run_match(screen, clock, mode_config):
 
                     # Goal Check
                     if ball.x - ball.radius < 0 and GOAL_TOP_Y < ball.y < GOAL_BOTTOM_Y:
-                        last_goal_speed = math.hypot(ball.vx, ball.vy) * 9.0
+                        last_goal_speed = math.hypot(ball.vx, ball.vy) * goal_speed_factor
                         score[1] += 1
                         if assets_loader.SOUNDS['goal']: assets_loader.SOUNDS['goal'].play()
                         
@@ -189,7 +190,7 @@ def run_match(screen, clock, mode_config):
                             goal_timer = 90
                             
                     elif ball.x + ball.radius > WIDTH and GOAL_TOP_Y < ball.y < GOAL_BOTTOM_Y:
-                        last_goal_speed = math.hypot(ball.vx, ball.vy) * 9.0
+                        last_goal_speed = math.hypot(ball.vx, ball.vy) * goal_speed_factor
                         score[0] += 1
                         if assets_loader.SOUNDS['goal']: assets_loader.SOUNDS['goal'].play()
                         
