@@ -1,8 +1,6 @@
-# 🚀 Rocket League 2D — *Rocket Soccer: Ultimate Edition*
+# 🚀 Rocket League 2D — *Pygame Edition*
 
 A 2D top-down arcade soccer/hockey game inspired by Rocket League, built with **Python** and **Pygame**. Drive a car around the field, smash a ball (or puck) with momentum-based physics, and outscore your opponent — with an AI goalkeeper guarding each net.
-
-> ⚠️ **This repository contains several old/experimental folders** (`Python-claude-version/`, `rocket_league_2d_pygbag/`, `Python Server/`, the single-file `rocket_league_2d - Basic.py`, etc.). **The actual, complete game lives in [`Python-version-main/`](./Python-version-main)** — that's the folder you should use. It ships with all art, fonts, and music already included, so it runs out of the box. The rest of this README covers that folder.
 
 ---
 
@@ -83,13 +81,7 @@ git clone https://github.com/muhammad-moiz-ansari/Rocket-League-2D.git
 cd Rocket-League-2D
 ```
 
-### 2. Go into the actual game folder
-
-```bash
-cd Python-version-main
-```
-
-### 3. Install dependencies
+### 2. Install dependencies
 
 ```bash
 pip install pygame
@@ -103,7 +95,7 @@ source venv/bin/activate      # On Windows: venv\Scripts\activate
 pip install pygame
 ```
 
-### 4. Run the game
+### 3. Run the game
 
 ```bash
 python main.py
@@ -113,10 +105,15 @@ The main menu should appear immediately — this folder already includes all tex
 
 ---
 
-## 📁 Project Structure (`Python-version-main/`)
+## 📁 Project Structure
 
 ```
-Python-version-main/
+Rocket-League-2D/
+└── assets/              # Textures, fonts, and music (already included)
+    ├── textures/
+    ├── fonts/
+    └── music/
+    └── sfx/
 ├── main.py              # Entry point — run this file
 ├── settings.py          # Constants: dimensions, colors, physics, game mode configs
 ├── assets_loader.py     # Loads images/sounds/fonts, with safe fallbacks
@@ -124,10 +121,10 @@ Python-version-main/
 ├── objects.py           # Car, Ball, and Goalkeeper classes
 ├── menu.py              # Main menu, mode select, controls, how-to-play, match setup
 ├── game.py              # The match loop (scoring, overtime, pausing, timer, HUD)
-└── assets/              # Textures, fonts, and music (already included)
-    ├── textures/
-    ├── fonts/
-    └── music/
+├── favicon.ico
+├── favicon.png
+├── LICENSE
+└── README.md
 ```
 
 ---
@@ -146,20 +143,8 @@ Gameplay tuning lives in `settings.py`:
 ## 🐛 Troubleshooting
 
 - **`ModuleNotFoundError: No module named 'pygame'`** — run `pip install pygame` in the same Python environment you're using to launch the game.
-- **Textures/fonts/music appear missing** — `Python-version-main/assets/` already ships with everything needed; make sure you're running `main.py` **from inside** the `Python-version-main` folder (asset paths are relative).
+- **Textures/fonts/music appear missing** — The `assets/` folder already ships with everything needed; make sure you run python `main.py` directly from the root project folder.
 - **Player 2's boost doesn't seem to work with Right Shift** — that's expected; boost is actually bound to the `M` key (see the note under [Controls](#controls)).
-
----
-
-## 📝 Other Folders in This Repo (not the main game)
-
-These are earlier iterations/experiments kept in the repo for reference — you don't need them to play:
-
-- `Python-claude-version/` — an earlier build with a similar menu system, missing some assets by default.
-- `rocket_league_2d_pygbag/` — a work-in-progress browser build using [pygbag](https://github.com/pygame-web/pygbag).
-- `Python Server/` — an experimental UDP client/server prototype for networked play.
-- `rocket_league_2d - Basic.py` — a minimal single-file version of the game.
-- `rocket_league_2d.html` — a standalone HTML export.
 
 ---
 
